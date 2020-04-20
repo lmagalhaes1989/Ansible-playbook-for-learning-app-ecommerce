@@ -1,0 +1,89 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: upgrade all packages
+      yum:
+        name: '*'
+        state: latest
+    - name: ensure a list of packages installed
+      yum:
+        state: present
+        name:
+          - firewalld
+          - mariadb-server
+          - httpd 
+          - php
+          - php-mysql
+          - git
+          - epel-release
+          - python-pip
+          - python-devel
+          - mysql-devel
+          - gcc
+    - name: upgrade pip
+      command: "pip install --upgrade pip"
+    - name: Install the Python MySQLB module
+      pip: name=MySQL-python
+    - name: Ensure services are running
+      service:
+        name: "{{item}}"
+        state: started
+        enabled: yes
+      with_items:
+          - firewalld 
+          - mariadb 
+    - name: Configure firewall for Database
+      command: "{{item}}"
+      with_items:
+          - firewall-cmd --permanent --zone=public --add-port=3306/tcp
+          - firewall-cmd --reload
+    - name: Clone repository to /var/www/html/
+      git:
+        repo: https://github.com/kodekloudhub/learning-app-ecommerce.git
+        dest: /var/www/html/
+        force: true
+    - name: Make sure there is neither a database with name 'ecomdb', nor one with name 'test'
+      mysql_db:
+        name: test
+        state: absent
+    - name: Create a new database with name 'ecomdb'
+      mysql_db:
+        name: ecomdb
+        state: present
+      notify:
+        - Import db-load-script.sql   
+    - name: Create a new user with name 'ecomdb'
+      mysql_user:
+        name: ecomuser
+        host: localhost
+        password: ecompassword
+        priv: '*.*:ALL'
+        state: present
+    - name: Configure firewall for Web
+      command: "{{item}}"
+      with_items:
+          - firewall-cmd --permanent --zone=public --add-port=80/tcp
+          - firewall-cmd --reload
+    - name: Change DirectoryIndex index.html to DirectoryIndex index.php to make the php page the default page
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: "DirectoryIndex index.html"
+        replace: "DirectoryIndex index.php"
+    - name: Ensure httpd service are running
+      service:
+        name: "httpd"
+        state: started
+        enabled: yes
+    - name: Change DirectoryIndex index.html to DirectoryIndex index.php to make the php page the default page
+      replace:
+        path: /var/www/html/index.php
+        regexp: '172.20.1.101'
+        replace: 'localhost'
+  handlers:
+    - name: Import db-load-script.sql
+      mysql_db:
+        state: import
+        name: ecomdb        
+        target: /var/www/html/assets/db-load-script.sql
+    
