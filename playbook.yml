@@ -6,13 +6,23 @@
       yum:
         name: '*'
         state: latest
+    - name: Enable EPEL Repository on CentOS 8
+      dnf:
+        name: epel-release
+        state: latest
+      when: ansible_facts['os_family'] == 'RedHat' and ansible_facts ['distribution_major_version'] == '8'
+    - name: Enable EPEL Repository on CentOS 7
+      yum:
+        name: epel-release
+        state: latest
+      when: ansible_facts['os_family'] == 'RedHat' and ansible_facts ['distribution_major_version'] == '7'
     - name: ensure a list of packages installed
       yum:
         state: present
         name:
           - firewalld
           - mariadb-server
-          - httpd 
+          - httpd
           - php
           - php-mysql
           - git
@@ -21,18 +31,15 @@
           - python-devel
           - mysql-devel
           - gcc
-    - name: upgrade pip
-      command: "pip install --upgrade pip"
-    - name: Install the Python MySQLB module
-      pip: name=MySQL-python
+          - MySQL-python
     - name: Ensure services are running
       service:
         name: "{{item}}"
         state: started
         enabled: yes
       with_items:
-          - firewalld 
-          - mariadb 
+          - firewalld
+          - mariadb
     - name: Configure firewall for Database
       command: "{{item}}"
       with_items:
@@ -52,7 +59,7 @@
         name: ecomdb
         state: present
       notify:
-        - Import db-load-script.sql   
+        - Import db-load-script.sql
     - name: Create a new user with name 'ecomdb'
       mysql_user:
         name: ecomuser
@@ -84,6 +91,5 @@
     - name: Import db-load-script.sql
       mysql_db:
         state: import
-        name: ecomdb        
+        name: ecomdb
         target: /var/www/html/assets/db-load-script.sql
-    
