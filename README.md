@@ -11,4 +11,4 @@ Develop a playbook to automate the deployment of the KodeKloud E-Commerce Applic
   
 - Web appliction to deploy [kodekloudhub/learning-app-ecommerce](https://github.com/kodekloudhub/learning-app-ecommerce)
 
-Special thanks for the @mmumshad fot another awesome couse!
+Special thanks for the @mmumshad fot another awesome course!
